@@ -1,6 +1,4 @@
-
-// 🟢 NUEVA VERSION: UI completamente desacoplada de la base de datos
- 
+// app/(tabs)/todos.tsx
 import { useTodos } from "@/src/presentation/hooks/useTodos";
 import { createStyles, defaultLightTheme, defaultDarkTheme } from "@/src/presentation/styles/todos.styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -12,16 +10,13 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
- 
-// 🟢 BENEFICIO: Este componente NO SABE si usamos SQLite, Firebase, o una API
-// Solo sabe que puede llamar a addTodo, toggleTodo, deleteTodo
  
 export default function TodosScreenClean() {
   const [inputText, setInputText] = useState("");
   const { todos, loading, addTodo, toggleTodo, deleteTodo } = useTodos();
  
-  // 🎨 Detectar tema y crear estilos dinámicamente
   const colorScheme = useColorScheme();
   const styles = useMemo(
     () => createStyles(colorScheme === 'dark' ? defaultDarkTheme : defaultLightTheme),
@@ -35,6 +30,29 @@ export default function TodosScreenClean() {
     if (success) {
       setInputText("");
     }
+  };
+
+  const handleDeleteTodo = (id: string, title: string) => {
+    console.log(`🚨 Delete button pressed for: ${title} (id: ${id}, type: ${typeof id})`);
+    
+    Alert.alert(
+      "Eliminar tarea",
+      `¿Estás seguro de eliminar "${title}"?`,
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: () => {
+            console.log(`✅ User confirmed deletion of ${id}`);
+            deleteTodo(id);
+          }
+        }
+      ]
+    );
   };
  
   if (loading) {
@@ -53,7 +71,10 @@ export default function TodosScreenClean() {
     <View style={styles.todoItem}>
       <TouchableOpacity
         style={styles.todoContent}
-        onPress={() => toggleTodo(item.id)}
+        onPress={() => {
+          console.log(`Toggle pressed for: ${item.title} (id: ${item.id})`);
+          toggleTodo(item.id);
+        }}
       >
         <View
           style={[styles.checkbox, item.completed && styles.checkboxChecked]}
@@ -67,7 +88,7 @@ export default function TodosScreenClean() {
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
-        onPress={() => deleteTodo(item.id)}
+        onPress={() => handleDeleteTodo(item.id, item.title)}
         style={styles.deleteButton}
       >
         <Text style={styles.deleteButtonText}>🗑️</Text>
@@ -77,7 +98,7 @@ export default function TodosScreenClean() {
  
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Mis Tareas (Clean)</Text>
+      <Text style={styles.title}>Mis Tareas</Text>
  
       <View style={styles.inputContainer}>
         <TextInput
@@ -86,6 +107,7 @@ export default function TodosScreenClean() {
           onChangeText={setInputText}
           placeholder="Nueva tarea..."
           placeholderTextColor={colorScheme === 'dark' ? defaultDarkTheme.placeholder : defaultLightTheme.placeholder}
+          onSubmitEditing={handleAddTodo}
         />
         <TouchableOpacity style={styles.addButton} onPress={handleAddTodo}>
           <Text style={styles.addButtonText}>+</Text>
@@ -95,7 +117,10 @@ export default function TodosScreenClean() {
       <FlatList
         data={todos}
         renderItem={renderTodo}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => {
+          console.log(`Key for item: ${item.title} = ${item.id} (type: ${typeof item.id})`);
+          return String(item.id);
+        }}
         style={styles.list}
         contentContainerStyle={styles.listContent}
       />
@@ -107,4 +132,3 @@ export default function TodosScreenClean() {
     </View>
   );
 }
- 
